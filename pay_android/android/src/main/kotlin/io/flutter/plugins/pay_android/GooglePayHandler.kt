@@ -183,10 +183,14 @@ class GooglePayHandler(private val activity: Activity) :
                 }
 
                 Activity.RESULT_CANCELED -> {
-                    loadPaymentDataResult.error(
+                    if (::loadPaymentDataResult.isInitialized) {
+                        loadPaymentDataResult.error(
                             "paymentCanceled",
                             "User canceled payment authorization",
                             null)
+                    } else {
+                        Log.e("GooglePayHandler", "loadPaymentDataResult not initialized")
+                    }
                     true
                 }
 
@@ -212,15 +216,20 @@ class GooglePayHandler(private val activity: Activity) :
      * Data](https://developers.google.com/pay/api/android/reference/object.PaymentData)
      */
     private fun handlePaymentSuccess(paymentData: PaymentData?) {
-        if (paymentData != null) {
-            loadPaymentDataResult.success(paymentData.toJson())
-        } else {
-            loadPaymentDataResult.error(
+        if (::loadPaymentDataResult.isInitialized) {
+            if (paymentData != null) {
+                loadPaymentDataResult.success(paymentData.toJson())
+            } else {
+                loadPaymentDataResult.error(
                     CommonStatusCodes.INTERNAL_ERROR.toString(),
                     "Unexpected empty result data.",
                     null)
+            }
+        } else {
+            Log.e("GooglePayHandler", "loadPaymentDataResult not initialized in handlePaymentSuccess")
         }
     }
+
 
     /**
      * Calls the result callback, with the resulting error.
