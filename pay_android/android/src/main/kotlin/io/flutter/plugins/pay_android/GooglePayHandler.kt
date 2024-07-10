@@ -41,7 +41,9 @@ private const val LOAD_PAYMENT_DATA_REQUEST_CODE = 991
  * ```
  * @property activity the activity used by the plugin binding.
  */
-class GooglePayHandler(private val activity: Activity) : PluginRegistry.ActivityResultListener {
+class GooglePayHandler(
+    private val activity: Activity, private val eventSink: EventChannel.EventSink?
+) : PluginRegistry.ActivityResultListener {
 
     private var eventSink: EventChannel.EventSink? = null
 
@@ -62,14 +64,14 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
             paymentItems: List<Map<String, Any?>>? = null
         ): JSONObject {
             val paymentProfile = JSONObject(paymentProfileString)
-            paymentItems?.find { it["type"] == "total" }?.let {
-                val priceStatus = when (it["status"]) {
+            paymentItems?.find { it["type"] == "total" }.let {
+                val priceStatus = when (it?.get("status")) {
                     "final_price" -> "FINAL"
                     "pending" -> "ESTIMATED"
                     else -> "NOT_CURRENTLY_KNOWN"
                 }
                 paymentProfile.getJSONObject("transactionInfo").apply {
-                    putOpt("totalPrice", it["amount"])
+                    putOpt("totalPrice", it?.get("amount"))
                     put("totalPriceStatus", priceStatus)
                 }
             }
@@ -92,12 +94,9 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
     private fun paymentClientForProfile(paymentProfile: JSONObject): PaymentsClient {
         val environmentConstant = PaymentsUtil
             .environmentForString(paymentProfile["environment"] as String?)
-
         return Wallet.getPaymentsClient(
             activity,
-            Wallet.WalletOptions.Builder()
-                .setEnvironment(environmentConstant)
-                .build()
+            Wallet.WalletOptions.Builder().setEnvironment(environmentConstant).build()
         )
     }
 
@@ -117,7 +116,7 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
      * @param result callback to communicate back with the Dart end in Flutter.
      * @param paymentProfileString the payment configuration object in [String] format.
      */
-    fun isReadyToPay(paymentProfileString: String) {
+    fun isReadyToPay(result: Result, paymentProfileString: String) {
         // Construct profile and client
         val paymentProfile = buildPaymentProfile(paymentProfileString)
         val client = paymentClientForProfile(paymentProfile)
@@ -126,9 +125,9 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
         val task = client.isReadyToPay(rtpRequest)
         task.addOnCompleteListener { completedTask ->
             try {
-                eventSink?.success(mapOf("isReadyToPay" to completedTask.getResult(ApiException::class.java)))
+                result.success(completedTask.getResult(ApiException::class.java))
             } catch (exception: Exception) {
-                eventSink?.error(
+                result.error(
                     PaymentsUtil.statusCodeForException(exception).toString(),
                     exception.message,
                     null
@@ -149,7 +148,11 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
      * @param paymentProfileString a JSON string with the configuration to execute this payment.
      * @param paymentItems a list of payment elements that determine the total amount purchased.
      */
-    fun loadPaymentData(paymentProfileString: String, paymentItems: List<Map<String, Any?>>) {
+    fun loadPaymentData(
+        result: Result,
+        paymentProfileString: String,
+        paymentItems: List<Map<String, Any?>>
+    ) {
         val paymentProfile = buildPaymentProfile(paymentProfileString, paymentItems)
         val client = paymentClientForProfile(paymentProfile)
         val ldpRequest = PaymentDataRequest.fromJson(paymentProfile.toString())
@@ -166,7 +169,7 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         data?.let { intent ->
-                            PaymentData.getFromIntent(intent)?.let { handlePaymentSuccess(it) }
+                            PaymentData.getFromIntent(intent).let(::handlePaymentSuccess)
                         }
                         true
                     }
@@ -202,8 +205,16 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
      * @see [Payment
      * Data](https://developers.google.com/pay/api/android/reference/object.PaymentData)
      */
-    private fun handlePaymentSuccess(paymentData: PaymentData) {
-        eventSink?.success(mapOf("paymentData" to paymentData.toJson()))
+    private fun handlePaymentSuccess(paymentData: PaymentData?) {
+        if (paymentData != null) {
+            eventSink?.success(paymentData.toJson())
+        } else {
+            eventSink?.error(
+                CommonStatusCodes.INTERNAL_ERROR.toString(),
+                "Unexpected empty result data.",
+                null
+            )
+        }
     }
 
 
@@ -221,14 +232,5 @@ class GooglePayHandler(private val activity: Activity) : PluginRegistry.Activity
      */
     private fun handleError(statusCode: Int) {
         eventSink?.error(statusCode.toString(), "", null)
-    }
-
-    private fun paymentClientForProfile(paymentProfile: JSONObject): PaymentsClient {
-        val environmentConstant =
-            PaymentsUtil.environmentForString(paymentProfile["environment"] as String?)
-        return Wallet.getPaymentsClient(
-            activity,
-            Wallet.WalletOptions.Builder().setEnvironment(environmentConstant).build()
-        )
     }
 }

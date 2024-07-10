@@ -21,6 +21,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugins.pay_android.view.PayButtonViewFactory
 import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.MethodChannel
 
 /**
  * Entry point handler for the plugin.
@@ -32,27 +33,42 @@ class PayPlugin : FlutterPlugin, ActivityAware {
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private lateinit var methodCallHandler: PayMethodCallHandler
     private lateinit var eventChannel: EventChannel
+    private var eventSink: EventChannel.EventSink? = nulll
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         this.flutterPluginBinding = flutterPluginBinding
         flutterPluginBinding.platformViewRegistry.registerViewFactory(
             googlePayButtonViewType, PayButtonViewFactory(flutterPluginBinding.binaryMessenger)
         )
-        eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "pay_event_channel")
+        eventChannel =
+            EventChannel(flutterPluginBinding.binaryMessenger, "plugins.flutter.io/pay_events")
+        eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                eventSink = events
+            }
+
+            override fun onCancel(arguments: Any?) {
+                eventSink = null
+            }
+        })
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) = Unit
 
     override fun onAttachedToActivity(activityPluginBinding: ActivityPluginBinding) {
-        methodCallHandler = PayMethodCallHandler(flutterPluginBinding, activityPluginBinding)
-        eventChannel.setStreamHandler(googlePayHandler)
+        methodCallHandler =
+            PayMethodCallHandler(flutterPluginBinding, activityPluginBinding, eventSink)
+        activityPluginBinding.addActivityResultListener(methodCallHandler.googlePayHandler)
     }
 
-    override fun onDetachedFromActivity() = methodCallHandler.stopListening()
+    override fun onDetachedFromActivity() {
+        methodCallHandler.stopListening()
+        eventSink = null
+    }
 
-    override fun onReattachedToActivityForConfigChanges(
-            activityPluginBinding: ActivityPluginBinding,
-    ) = onAttachedToActivity(activityPluginBinding)
+    override fun onReattachedToActivityForConfigChanges(activityPluginBinding: ActivityPluginBinding) {
+        onAttachedToActivity(activityPluginBinding)
+    }
 
     override fun onDetachedFromActivityForConfigChanges() = onDetachedFromActivity()
 }
