@@ -18,7 +18,6 @@ package io.flutter.plugins.pay_android
 
 import android.app.Activity
 import android.content.Intent
-import android.util.Log
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.wallet.*
@@ -42,10 +41,9 @@ private const val LOAD_PAYMENT_DATA_REQUEST_CODE = 991
  * @property activity the activity used by the plugin binding.
  */
 class GooglePayHandler(
-    private val activity: Activity, private val eventSink: EventChannel.EventSink?
+    private val activity: Activity,
+    private var eventSink: EventChannel.EventSink?
 ) : PluginRegistry.ActivityResultListener {
-
-    private var eventSink: EventChannel.EventSink? = null
 
     companion object {
 
@@ -116,7 +114,10 @@ class GooglePayHandler(
      * @param result callback to communicate back with the Dart end in Flutter.
      * @param paymentProfileString the payment configuration object in [String] format.
      */
-    fun isReadyToPay(result: Result, paymentProfileString: String) {
+    fun isReadyToPay(
+        result: io.flutter.plugin.common.MethodChannel.Result,
+        paymentProfileString: String
+    ) {
         // Construct profile and client
         val paymentProfile = buildPaymentProfile(paymentProfileString)
         val client = paymentClientForProfile(paymentProfile)
@@ -149,7 +150,7 @@ class GooglePayHandler(
      * @param paymentItems a list of payment elements that determine the total amount purchased.
      */
     fun loadPaymentData(
-        result: Result,
+        result: io.flutter.plugin.common.MethodChannel.Result,
         paymentProfileString: String,
         paymentItems: List<Map<String, Any?>>
     ) {
@@ -169,7 +170,7 @@ class GooglePayHandler(
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         data?.let { intent ->
-                            PaymentData.getFromIntent(intent).let(::handlePaymentSuccess)
+                            PaymentData.getFromIntent(intent)?.let(::handlePaymentSuccess)
                         }
                         true
                     }
@@ -205,16 +206,8 @@ class GooglePayHandler(
      * @see [Payment
      * Data](https://developers.google.com/pay/api/android/reference/object.PaymentData)
      */
-    private fun handlePaymentSuccess(paymentData: PaymentData?) {
-        if (paymentData != null) {
-            eventSink?.success(paymentData.toJson())
-        } else {
-            eventSink?.error(
-                CommonStatusCodes.INTERNAL_ERROR.toString(),
-                "Unexpected empty result data.",
-                null
-            )
-        }
+    private fun handlePaymentSuccess(paymentData: PaymentData) {
+        eventSink?.success(paymentData.toJson())
     }
 
 
