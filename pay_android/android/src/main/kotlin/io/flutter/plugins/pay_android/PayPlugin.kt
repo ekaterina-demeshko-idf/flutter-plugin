@@ -33,7 +33,7 @@ class PayPlugin : FlutterPlugin, ActivityAware {
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private lateinit var methodCallHandler: PayMethodCallHandler
     private lateinit var eventChannel: EventChannel
-    private var eventSink: EventChannel.EventSink? = nulll
+    private var eventSink: EventChannel.EventSink? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         this.flutterPluginBinding = flutterPluginBinding
