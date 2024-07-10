@@ -20,6 +20,7 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugins.pay_android.view.PayButtonViewFactory
+import io.flutter.plugin.common.EventChannel
 
 /**
  * Entry point handler for the plugin.
@@ -30,17 +31,21 @@ class PayPlugin : FlutterPlugin, ActivityAware {
 
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private lateinit var methodCallHandler: PayMethodCallHandler
+    private lateinit var eventChannel: EventChannel
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         this.flutterPluginBinding = flutterPluginBinding
         flutterPluginBinding.platformViewRegistry.registerViewFactory(
-            googlePayButtonViewType, PayButtonViewFactory(flutterPluginBinding.binaryMessenger))
+            googlePayButtonViewType, PayButtonViewFactory(flutterPluginBinding.binaryMessenger)
+        )
+        eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "pay_event_channel")
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) = Unit
 
     override fun onAttachedToActivity(activityPluginBinding: ActivityPluginBinding) {
         methodCallHandler = PayMethodCallHandler(flutterPluginBinding, activityPluginBinding)
+        eventChannel.setStreamHandler(googlePayHandler)
     }
 
     override fun onDetachedFromActivity() = methodCallHandler.stopListening()
