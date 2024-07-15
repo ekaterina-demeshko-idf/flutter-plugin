@@ -207,7 +207,12 @@ class GooglePayHandler(
      * Data](https://developers.google.com/pay/api/android/reference/object.PaymentData)
      */
     private fun handlePaymentSuccess(paymentData: PaymentData) {
-        eventSink?.success(paymentData.toJson())
+        if (paymentData != null) {
+            eventSink?.success(paymentData.toJson())
+        } else {
+            handleError(CommonStatusCodes.INTERNAL_ERROR)
+        }
+
     }
 
 

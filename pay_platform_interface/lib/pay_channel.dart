@@ -22,7 +22,7 @@ import 'core/payment_item.dart';
 import 'pay_platform_interface.dart';
 
 /// An implementation of the contract in this plugin that uses a [MethodChannel]
-/// to communicate with the native end.
+/// and an [EventChannel] to communicate with the native end.
 ///
 /// Example of a simple method channel:
 ///
@@ -34,8 +34,24 @@ import 'pay_platform_interface.dart';
 /// ```
 class PayMethodChannel extends PayPlatform {
   // The channel used to send messages down the native pipe.
-  final MethodChannel _channel =
-      const MethodChannel('plugins.flutter.io/pay_channel');
+  final MethodChannel _channel = const MethodChannel('plugins.flutter.io/pay_channel');
+  static const EventChannel _eventChannel = EventChannel('plugins.flutter.io/pay_events');
+
+  // Stream for payment events
+  final StreamController<Map<String, dynamic>> _eventStreamController = StreamController.broadcast();
+
+  PayMethodChannel() {
+    // Listen to the event channel and add events to the stream controller
+    _eventChannel.receiveBroadcastStream().listen((dynamic event) {
+      final Map<String, dynamic> eventData = jsonDecode(event as String) as Map<String, dynamic>;
+      _eventStreamController.add(eventData);
+    }, onError: (dynamic error) {
+      print('[PayMethodChannel] Error receiving event: $error');
+    });
+  }
+
+  /// Provides a stream of payment events.
+  Stream<Map<String, dynamic>> get events => _eventStreamController.stream;
 
   /// Determines whether a user can pay with the provider in the configuration.
   ///
@@ -65,5 +81,10 @@ class PayMethodChannel extends PayPlatform {
     }) as String;
 
     return jsonDecode(paymentResult) as Map<String, dynamic>;
+  }
+
+  /// Close the event stream controller when done.
+  void dispose() {
+    _eventStreamController.close();
   }
 }
