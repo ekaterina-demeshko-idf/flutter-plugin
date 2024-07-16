@@ -39,7 +39,7 @@ class PayMethodCallHandler private constructor(
     private val activityBinding: ActivityPluginBinding?,
     private val eventSink: EventChannel.EventSink?
 ) : MethodCallHandler {
-    val googlePayHandler: GooglePayHandler = GooglePayHandler(activity, eventSink)
+    private val googlePayHandler: GooglePayHandler = GooglePayHandler(activity, eventSink)
     private val channel: MethodChannel = MethodChannel(messenger, METHOD_CHANNEL_NAME)
 
     init {

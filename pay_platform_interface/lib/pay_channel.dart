@@ -46,7 +46,8 @@ class PayMethodChannel extends PayPlatform {
       final Map<String, dynamic> eventData = jsonDecode(event as String) as Map<String, dynamic>;
       _eventStreamController.add(eventData);
     }, onError: (dynamic error) {
-      print('[PayMethodChannel] Error receiving event: $error');
+      // Flush error to the event stream controller
+      _eventStreamController.addError('[PayMethodChannel] Error receiving event: $error');
     });
   }
 
@@ -59,9 +60,8 @@ class PayMethodChannel extends PayPlatform {
   /// returns a boolean for the [paymentConfiguration] specified.
   @override
   Future<bool> userCanPay(PaymentConfiguration paymentConfiguration) async {
-    return await _channel.invokeMethod(
-            'userCanPay', jsonEncode(await paymentConfiguration.parameterMap()))
-        as bool;
+    return await _methodChannel.invokeMethod(
+        'userCanPay', jsonEncode(await paymentConfiguration.parameterMap())) as bool;
   }
 
   /// Shows the payment selector to complete the payment operation.
@@ -71,11 +71,9 @@ class PayMethodChannel extends PayPlatform {
   /// a result if the operation completes successfully, or throws a
   /// [PlatformException] if there's an error on the native end.
   @override
-  Future<Map<String, dynamic>> showPaymentSelector(
-    PaymentConfiguration paymentConfiguration,
-    List<PaymentItem> paymentItems,
-  ) async {
-    final paymentResult = await _channel.invokeMethod('showPaymentSelector', {
+  Future<Map<String, dynamic>> showPaymentSelector(PaymentConfiguration paymentConfiguration,
+      List<PaymentItem> paymentItems,) async {
+    final paymentResult = await _methodChannel.invokeMethod('showPaymentSelector', {
       'payment_profile': jsonEncode(await paymentConfiguration.parameterMap()),
       'payment_items': paymentItems.map((item) => item.toMap()).toList(),
     }) as String;

@@ -98,10 +98,6 @@ class GooglePayHandler(
         )
     }
 
-    fun setEventSink(eventSink: EventChannel.EventSink?) {
-        this.eventSink = eventSink
-    }
-
     /**
      * Checks whether the user transacting can use Google Pay to start a payment process.
      *
@@ -181,6 +177,11 @@ class GooglePayHandler(
                             "User canceled payment authorization",
                             null
                         )
+                        loadPaymentDataResult?.error(
+                            "paymentCanceled",
+                            "User canceled payment authorization",
+                            null
+                        )
                         true
                     }
 
@@ -209,10 +210,10 @@ class GooglePayHandler(
     private fun handlePaymentSuccess(paymentData: PaymentData) {
         if (paymentData != null) {
             eventSink?.success(paymentData.toJson())
+            loadPaymentDataResult?.success(paymentData.toJson())
         } else {
             handleError(CommonStatusCodes.INTERNAL_ERROR)
         }
-
     }
 
 
@@ -230,5 +231,6 @@ class GooglePayHandler(
      */
     private fun handleError(statusCode: Int) {
         eventSink?.error(statusCode.toString(), "", null)
+        loadPaymentDataResult?.error(statusCode.toString(), "", null)
     }
 }
