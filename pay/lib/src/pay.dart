@@ -42,6 +42,9 @@ class Pay {
   /// instantiates the [_payPlatform] to communicate with the native platforms.
   Pay(this._configurations) : _payPlatform = PayMethodChannel();
 
+  /// Stream getter for events from PayPlatform
+  Stream<Map<String, dynamic>> get events => _payPlatform.events;
+
   /// Determines whether a user can pay with the selected [provider].
   ///
   /// This method wraps the [userCanPay] method in the platform interface. It
