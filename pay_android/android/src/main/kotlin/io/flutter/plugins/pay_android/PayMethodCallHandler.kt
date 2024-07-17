@@ -73,6 +73,7 @@ class PayMethodCallHandler private constructor(
                     arguments.getValue("payment_profile") as String,
                     arguments.getValue("payment_items") as List<Map<String, Any?>>
                 )
+                result.success(null)
             }
             else -> result.notImplemented()
         }

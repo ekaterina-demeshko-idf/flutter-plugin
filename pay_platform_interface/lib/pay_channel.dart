@@ -60,7 +60,7 @@ class PayMethodChannel extends PayPlatform {
   /// returns a boolean for the [paymentConfiguration] specified.
   @override
   Future<bool> userCanPay(PaymentConfiguration paymentConfiguration) async {
-    return await _methodChannel.invokeMethod(
+    return await _channel.invokeMethod(
         'userCanPay', jsonEncode(await paymentConfiguration.parameterMap())) as bool;
   }
 
@@ -73,7 +73,7 @@ class PayMethodChannel extends PayPlatform {
   @override
   Future<Map<String, dynamic>> showPaymentSelector(PaymentConfiguration paymentConfiguration,
       List<PaymentItem> paymentItems,) async {
-    final paymentResult = await _methodChannel.invokeMethod('showPaymentSelector', {
+    final paymentResult = await _channel.invokeMethod('showPaymentSelector', {
       'payment_profile': jsonEncode(await paymentConfiguration.parameterMap()),
       'payment_items': paymentItems.map((item) => item.toMap()).toList(),
     }) as String;
