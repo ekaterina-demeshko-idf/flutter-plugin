@@ -36,5 +36,5 @@ abstract class PayPlatform {
       List<PaymentItem> paymentItems);
 
   /// A stream of payment events.
-  Stream<Map<String, dynamic>> get events;
+  Stream<Map<String, dynamic>> get hevents;
 }
