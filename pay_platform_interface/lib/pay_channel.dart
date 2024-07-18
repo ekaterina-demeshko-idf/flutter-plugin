@@ -53,7 +53,7 @@ class PayMethodChannel extends PayPlatform {
 
   /// Provides a stream of payment events.
   @override
-  Stream<Map<String, dynamic>> get hevents => _eventStreamController.stream;
+  Stream<Map<String, dynamic>> get events => _eventStreamController.stream;
 
   /// Determines whether a user can pay with the provider in the configuration.
   ///

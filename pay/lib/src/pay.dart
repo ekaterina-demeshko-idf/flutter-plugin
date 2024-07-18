@@ -43,7 +43,7 @@ class Pay {
   Pay(this._configurations) : _payPlatform = PayMethodChannel();
 
   /// Stream getter for events from PayPlatform
-  Stream<Map<String, dynamic>> get hevents => _payPlatform.hevents;
+  Stream<Map<String, dynamic>> get events => _payPlatform.events;
 
   /// Determines whether a user can pay with the selected [provider].
   ///
