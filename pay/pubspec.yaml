@@ -36,7 +36,7 @@ dependencies:
     sdk: flutter
   pay_android: ^2.0.0
   pay_ios: ^1.0.11
-  pay_platform_interface: ^1.0.4
+  pay_platform_interface: ^1.0.8
   meta: ^1.10.0
 
 dev_dependencies:
