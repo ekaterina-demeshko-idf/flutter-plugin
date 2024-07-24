@@ -33,7 +33,6 @@ class PayPlugin : FlutterPlugin, ActivityAware {
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private lateinit var methodCallHandler: PayMethodCallHandler
     private lateinit var eventChannel: EventChannel
-    private var eventSink: EventChannel.EventSink? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         this.flutterPluginBinding = flutterPluginBinding
@@ -44,25 +43,18 @@ class PayPlugin : FlutterPlugin, ActivityAware {
             EventChannel(flutterPluginBinding.binaryMessenger, "plugins.flutter.io/pay_events")
         eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
-                print("**onListen**")
-                eventSink = events
-            }
-
-            override fun onCancel(arguments: Any?) {
-                print("**onCancel**")
-                eventSink = null
+                methodCallHandler.setEventSink(events)
             }
         })
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         eventChannel.setStreamHandler(null)
-        eventSink = null
     }
 
     override fun onAttachedToActivity(activityPluginBinding: ActivityPluginBinding) {
         methodCallHandler =
-            PayMethodCallHandler(flutterPluginBinding, activityPluginBinding, eventSink)
+            PayMethodCallHandler(flutterPluginBinding, activityPluginBinding)
     }
 
     override fun onDetachedFromActivity() {

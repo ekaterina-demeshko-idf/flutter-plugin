@@ -36,10 +36,9 @@ private const val METHOD_SHOW_PAYMENT_SELECTOR = "showPaymentSelector"
 class PayMethodCallHandler private constructor(
     messenger: BinaryMessenger,
     activity: Activity,
-    private val activityBinding: ActivityPluginBinding?,
-    private val eventSink: EventChannel.EventSink?
+    private val activityBinding: ActivityPluginBinding?
 ) : MethodCallHandler {
-    private val googlePayHandler: GooglePayHandler = GooglePayHandler(activity, eventSink)
+    private val googlePayHandler: GooglePayHandler = GooglePayHandler(activity)
     private val channel: MethodChannel = MethodChannel(messenger, METHOD_CHANNEL_NAME)
 
     init {
@@ -48,10 +47,14 @@ class PayMethodCallHandler private constructor(
 
     constructor(
         flutterBinding: FlutterPlugin.FlutterPluginBinding,
-        activityBinding: ActivityPluginBinding,
-        eventSink: EventChannel.EventSink?
-    ) : this(flutterBinding.binaryMessenger, activityBinding.activity, activityBinding, eventSink) {
+        activityBinding: ActivityPluginBinding
+    ) : this(flutterBinding.binaryMessenger, activityBinding.activity, activityBinding) {
         activityBinding.addActivityResultListener(googlePayHandler)
+    }
+
+
+    fun setEventSink(events: EventChannel.EventSink?) {
+        googlePayHandler.setEventSink(events)
     }
 
     /**
@@ -74,6 +77,7 @@ class PayMethodCallHandler private constructor(
                 )
                 result.success(null)
             }
+
             else -> result.notImplemented()
         }
     }

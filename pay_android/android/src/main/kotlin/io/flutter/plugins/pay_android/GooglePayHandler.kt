@@ -42,8 +42,9 @@ private const val LOAD_PAYMENT_DATA_REQUEST_CODE = 991
  */
 class GooglePayHandler(
     private val activity: Activity,
-    private var eventSink: EventChannel.EventSink?
 ) : PluginRegistry.ActivityResultListener {
+
+    private var eventSink: EventChannel.EventSink? = null
 
     companion object {
 
@@ -96,6 +97,10 @@ class GooglePayHandler(
             activity,
             Wallet.WalletOptions.Builder().setEnvironment(environmentConstant).build()
         )
+    }
+
+    fun setEventSink(events: EventChannel.EventSink?) {
+        eventSink = events
     }
 
     /**
@@ -159,7 +164,6 @@ class GooglePayHandler(
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        print("**onActivityResult** requestCode: $requestCode resultCode: $resultCode")
         return when (requestCode) {
             LOAD_PAYMENT_DATA_REQUEST_CODE -> {
                 when (resultCode) {
