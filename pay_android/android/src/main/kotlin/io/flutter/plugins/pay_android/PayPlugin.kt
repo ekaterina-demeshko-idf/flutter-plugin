@@ -45,6 +45,9 @@ class PayPlugin : FlutterPlugin, ActivityAware {
             override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                 methodCallHandler.setEventSink(events)
             }
+
+            override fun onCancel(arguments: Any?) {
+            }
         })
     }
 
@@ -53,8 +56,7 @@ class PayPlugin : FlutterPlugin, ActivityAware {
     }
 
     override fun onAttachedToActivity(activityPluginBinding: ActivityPluginBinding) {
-        methodCallHandler =
-            PayMethodCallHandler(flutterPluginBinding, activityPluginBinding)
+        methodCallHandler = PayMethodCallHandler(flutterPluginBinding, activityPluginBinding)
     }
 
     override fun onDetachedFromActivity() {
