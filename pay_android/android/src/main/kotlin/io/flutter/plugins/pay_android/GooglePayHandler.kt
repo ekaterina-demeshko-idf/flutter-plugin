@@ -158,7 +158,7 @@ class GooglePayHandler(
         )
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean =
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         print("**onActivityResult** requestCode: $requestCode resultCode: $resultCode")
         when (requestCode) {
             LOAD_PAYMENT_DATA_REQUEST_CODE -> {
@@ -192,6 +192,7 @@ class GooglePayHandler(
 
             else -> false
         }
+    }
 
     /**
      * Takes the result after showing the payment selector and uses it to create a response.
