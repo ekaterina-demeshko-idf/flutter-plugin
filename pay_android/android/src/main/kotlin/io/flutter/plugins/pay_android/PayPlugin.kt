@@ -44,26 +44,29 @@ class PayPlugin : FlutterPlugin, ActivityAware {
             EventChannel(flutterPluginBinding.binaryMessenger, "plugins.flutter.io/pay_events")
         eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                print("**onListen**")
                 eventSink = events
             }
 
             override fun onCancel(arguments: Any?) {
+                print("**onCancel**")
                 eventSink = null
             }
         })
     }
 
-    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) = Unit
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        eventChannel.setStreamHandler(null)
+        eventSink = null
+    }
 
     override fun onAttachedToActivity(activityPluginBinding: ActivityPluginBinding) {
         methodCallHandler =
             PayMethodCallHandler(flutterPluginBinding, activityPluginBinding, eventSink)
-        activityPluginBinding.addActivityResultListener(methodCallHandler.googlePayHandler)
     }
 
     override fun onDetachedFromActivity() {
         methodCallHandler.stopListening()
-        eventSink = null
     }
 
     override fun onReattachedToActivityForConfigChanges(activityPluginBinding: ActivityPluginBinding) {

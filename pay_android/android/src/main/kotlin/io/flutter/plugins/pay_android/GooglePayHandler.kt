@@ -141,12 +141,10 @@ class GooglePayHandler(
      * the [`loadPaymentData`][https://developers.google.com/android/reference/com/google/android/gms/wallet/PaymentsClient#isReadyToPay(com.google.android.gms.wallet.IsReadyToPayRequest)]
      * call to learn more.
      *
-     * @param result te reference to the result to send the response back to Flutter.
      * @param paymentProfileString a JSON string with the configuration to execute this payment.
      * @param paymentItems a list of payment elements that determine the total amount purchased.
      */
     fun loadPaymentData(
-        result: io.flutter.plugin.common.MethodChannel.Result,
         paymentProfileString: String,
         paymentItems: List<Map<String, Any?>>
     ) {
@@ -161,6 +159,7 @@ class GooglePayHandler(
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean =
+        print("**onActivityResult** requestCode: $requestCode resultCode: $resultCode")
         when (requestCode) {
             LOAD_PAYMENT_DATA_REQUEST_CODE -> {
                 when (resultCode) {
@@ -173,11 +172,6 @@ class GooglePayHandler(
 
                     Activity.RESULT_CANCELED -> {
                         eventSink?.error(
-                            "paymentCanceled",
-                            "User canceled payment authorization",
-                            null
-                        )
-                        loadPaymentDataResult?.error(
                             "paymentCanceled",
                             "User canceled payment authorization",
                             null
@@ -210,12 +204,10 @@ class GooglePayHandler(
     private fun handlePaymentSuccess(paymentData: PaymentData) {
         if (paymentData != null) {
             eventSink?.success(paymentData.toJson())
-            loadPaymentDataResult?.success(paymentData.toJson())
         } else {
             handleError(CommonStatusCodes.INTERNAL_ERROR)
         }
     }
-
 
     /**
      * Calls the result callback, with the resulting error.
@@ -231,6 +223,5 @@ class GooglePayHandler(
      */
     private fun handleError(statusCode: Int) {
         eventSink?.error(statusCode.toString(), "", null)
-        loadPaymentDataResult?.error(statusCode.toString(), "", null)
     }
 }

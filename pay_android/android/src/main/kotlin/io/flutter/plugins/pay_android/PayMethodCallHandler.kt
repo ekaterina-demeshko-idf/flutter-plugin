@@ -69,7 +69,6 @@ class PayMethodCallHandler private constructor(
             METHOD_SHOW_PAYMENT_SELECTOR -> {
                 val arguments = call.arguments<Map<String, Any>>()!!
                 googlePayHandler.loadPaymentData(
-                    result,
                     arguments.getValue("payment_profile") as String,
                     arguments.getValue("payment_items") as List<Map<String, Any?>>
                 )
