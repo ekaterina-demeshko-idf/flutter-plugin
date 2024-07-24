@@ -160,7 +160,7 @@ class GooglePayHandler(
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         print("**onActivityResult** requestCode: $requestCode resultCode: $resultCode")
-        when (requestCode) {
+        return when (requestCode) {
             LOAD_PAYMENT_DATA_REQUEST_CODE -> {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
