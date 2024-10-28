@@ -59,10 +59,8 @@ class PaymentConfiguration {
   PaymentConfiguration._(Map<String, dynamic> configuration)
       : assert(configuration.containsKey('provider')),
         assert(configuration.containsKey('data')),
-        assert(
-            PayProviders.isValidProvider(configuration['provider'] as String)),
-        provider =
-            PayProviders.fromString(configuration['provider'] as String)!,
+        assert(PayProviders.isValidProvider(configuration['provider'] as String)),
+        provider = PayProviders.fromString(configuration['provider'] as String)!,
         _rawConfigurationData = jsonEncode(configuration['data']),
         _parameters = Configurations.extractParameters(configuration);
 
@@ -86,8 +84,7 @@ class PaymentConfiguration {
   /// final config = await PaymentConfiguration.fromAsset('path-to-file.json',
   ///     profileLoader: _fileSystemLoader);
   /// ```
-  static Future<PaymentConfiguration> fromAsset(
-      String paymentConfigurationAsset,
+  static Future<PaymentConfiguration> fromAsset(String paymentConfigurationAsset,
       {ConfigLoader profileLoader = _defaultProfileLoader}) async {
     final configuration = await profileLoader(paymentConfigurationAsset);
     return PaymentConfiguration._(configuration);
@@ -99,10 +96,8 @@ class PaymentConfiguration {
   /// [paymentConfigurationAsset] key from the `assets` folder in the
   /// package and decodes the JSON content before returning it back to the
   /// caller.
-  static Future<Map<String, dynamic>> _defaultProfileLoader(
-          String paymentConfigurationAsset) async =>
-      await rootBundle.loadStructuredData('assets/$paymentConfigurationAsset',
-          (s) async => jsonDecode(s) as Map<String, dynamic>);
+  static Future<Map<String, dynamic>> _defaultProfileLoader(String paymentConfigurationAsset) async => await rootBundle
+      .loadStructuredData('assets/$paymentConfigurationAsset', (s) async => jsonDecode(s) as Map<String, dynamic>);
 
   /// Returns the core configuration map in this object.
   Future<Map<String, dynamic>> parameterMap() async {
@@ -121,8 +116,7 @@ extension PayProviders on PayProvider {
         'google_pay': PayProvider.google_pay,
       }[providerString];
 
-  static bool isValidProvider(String providerString) =>
-      fromString(providerString) != null;
+  static bool isValidProvider(String providerString) => fromString(providerString) != null;
 
   String? toSimpleString() => {
         PayProvider.apple_pay: 'apple_pay',

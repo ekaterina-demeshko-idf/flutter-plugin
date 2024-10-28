@@ -34,7 +34,7 @@ import 'pay_platform_interface.dart';
 /// ```
 class PayMethodChannel extends PayPlatform {
   // The channel used to send messages down the native pipe.
-  final MethodChannel _channel = const MethodChannel('plugins.flutter.io/pay_channel');
+  final MethodChannel _channel = const MethodChannel('plugins.flutter.io/pay');
   static const EventChannel _eventChannel = EventChannel('plugins.flutter.io/pay_events');
 
   // Stream for payment events
@@ -61,8 +61,7 @@ class PayMethodChannel extends PayPlatform {
   /// returns a boolean for the [paymentConfiguration] specified.
   @override
   Future<bool> userCanPay(PaymentConfiguration paymentConfiguration) async {
-    return await _channel.invokeMethod(
-        'userCanPay', jsonEncode(await paymentConfiguration.parameterMap())) as bool;
+    return await _channel.invokeMethod('userCanPay', jsonEncode(await paymentConfiguration.parameterMap())) as bool;
   }
 
   /// Shows the payment selector to complete the payment operation.
@@ -72,14 +71,16 @@ class PayMethodChannel extends PayPlatform {
   /// a result if the operation completes successfully, or throws a
   /// [PlatformException] if there's an error on the native end.
   @override
-  Future<Map<String, dynamic>> showPaymentSelector(PaymentConfiguration paymentConfiguration,
-      List<PaymentItem> paymentItems,) async {
+  Future<Map<String, dynamic>> showPaymentSelector(
+    PaymentConfiguration paymentConfiguration,
+    List<PaymentItem> paymentItems,
+  ) async {
     final paymentResult = await _channel.invokeMethod('showPaymentSelector', {
       'payment_profile': jsonEncode(await paymentConfiguration.parameterMap()),
       'payment_items': paymentItems.map((item) => item.toMap()).toList(),
-    }) as String?;
+    }) as String;
 
-    return jsonDecode(paymentResult ?? '{}') as Map<String, dynamic>;
+    return jsonDecode(paymentResult) as Map<String, dynamic>;
   }
 
   /// Close the event stream controller when done.
