@@ -78,9 +78,9 @@ class PayMethodChannel extends PayPlatform {
     final paymentResult = await _channel.invokeMethod('showPaymentSelector', {
       'payment_profile': jsonEncode(await paymentConfiguration.parameterMap()),
       'payment_items': paymentItems.map((item) => item.toMap()).toList(),
-    }) as String;
+    }) as String?;
 
-    return jsonDecode(paymentResult) as Map<String, dynamic>;
+    return jsonDecode(paymentResult ?? '') as Map<String, dynamic>;
   }
 
   /// Close the event stream controller when done.
