@@ -25,30 +25,23 @@ class Configurations {
   ///
   /// Takes the configuration included in [config] and returns and updated
   /// version of the object wrapped in a [Future] with additional metadata.
-  static Future<Map<String, dynamic>> extractParameters(
-      Map<String, dynamic> configuration) async {
-    PayProvider provider =
-        PayProviders.fromString(configuration['provider'] as String)!;
-    Map<String, dynamic> configurationParams =
-        configuration['data'] as Map<String, dynamic>;
+  static Future<Map<String, dynamic>> extractParameters(Map<String, dynamic> configuration) async {
+    PayProvider provider = PayProviders.fromString(configuration['provider'] as String)!;
+    Map<String, dynamic> configurationParams = configuration['data'] as Map<String, dynamic>;
 
     switch (provider) {
       case PayProvider.apple_pay:
         return configurationParams;
 
       case PayProvider.google_pay:
-
         // Add information about the package.
         final updatedMerchantInfo = {
           ...(configurationParams['merchantInfo'] ?? {}) as Map,
-          'softwareInfo': {
-            'id': 'flutter/pay-plugin',
-            'version': (await _getPackageConfiguration())['version']
-          }
+          'softwareInfo': {'id': 'flutter/pay-plugin', 'version': (await _getPackageConfiguration())['version']}
         };
 
-        final updatedPaymentConfiguration = Map<String, Object>.unmodifiable(
-            {...configurationParams, 'merchantInfo': updatedMerchantInfo});
+        final updatedPaymentConfiguration =
+            Map<String, Object>.unmodifiable({...configurationParams, 'merchantInfo': updatedMerchantInfo});
 
         return updatedPaymentConfiguration;
     }
@@ -56,8 +49,7 @@ class Configurations {
 
   /// Retrieves package information from the `pubspec.yaml` file as a [Map].
   static Future<Map<dynamic, dynamic>> _getPackageConfiguration() async {
-    final configurationFile = await rootBundle
-        .loadString('packages/pay_platform_interface/pubspec.yaml');
+    final configurationFile = await rootBundle.loadString('packages/pay_platform_interface/pubspec.yaml');
     return loadYaml(configurationFile) as Map<dynamic, dynamic>;
   }
 }

@@ -34,4 +34,7 @@ abstract class PayPlatform {
   Future<Map<String, dynamic>> showPaymentSelector(
       PaymentConfiguration paymentConfiguration,
       List<PaymentItem> paymentItems);
+
+  /// A stream of payment events.
+  Stream<Map<String, dynamic>> get events;
 }

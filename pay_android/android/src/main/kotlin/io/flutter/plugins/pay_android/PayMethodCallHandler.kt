@@ -24,8 +24,9 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.EventChannel
 
-private const val METHOD_CHANNEL_NAME = "plugins.flutter.io/pay_channel"
+private const val METHOD_CHANNEL_NAME = "plugins.flutter.io/pay"
 
 private const val METHOD_USER_CAN_PAY = "userCanPay"
 private const val METHOD_SHOW_PAYMENT_SELECTOR = "showPaymentSelector"
@@ -36,11 +37,10 @@ private const val METHOD_SHOW_PAYMENT_SELECTOR = "showPaymentSelector"
 class PayMethodCallHandler private constructor(
     messenger: BinaryMessenger,
     activity: Activity,
-    private val activityBinding: ActivityPluginBinding?,
+    private val activityBinding: ActivityPluginBinding?
 ) : MethodCallHandler {
-
-    private val channel: MethodChannel = MethodChannel(messenger, METHOD_CHANNEL_NAME)
     private val googlePayHandler: GooglePayHandler = GooglePayHandler(activity)
+    private val channel: MethodChannel = MethodChannel(messenger, METHOD_CHANNEL_NAME)
 
     init {
         channel.setMethodCallHandler(this)
@@ -48,9 +48,14 @@ class PayMethodCallHandler private constructor(
 
     constructor(
         flutterBinding: FlutterPlugin.FlutterPluginBinding,
-        activityBinding: ActivityPluginBinding,
+        activityBinding: ActivityPluginBinding
     ) : this(flutterBinding.binaryMessenger, activityBinding.activity, activityBinding) {
         activityBinding.addActivityResultListener(googlePayHandler)
+    }
+
+
+    fun setEventSink(events: EventChannel.EventSink?) {
+        googlePayHandler.setEventSink(events)
     }
 
     /**
@@ -68,10 +73,10 @@ class PayMethodCallHandler private constructor(
             METHOD_SHOW_PAYMENT_SELECTOR -> {
                 val arguments = call.arguments<Map<String, Any>>()!!
                 googlePayHandler.loadPaymentData(
-                    result,
                     arguments.getValue("payment_profile") as String,
                     arguments.getValue("payment_items") as List<Map<String, Any?>>
                 )
+                result.success(null)
             }
 
             else -> result.notImplemented()

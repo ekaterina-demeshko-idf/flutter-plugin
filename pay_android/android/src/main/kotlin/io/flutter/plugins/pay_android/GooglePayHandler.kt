@@ -21,7 +21,7 @@ import android.content.Intent
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.wallet.*
-import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugins.pay_android.util.PaymentsUtil
 import org.json.JSONObject
@@ -40,10 +40,11 @@ private const val LOAD_PAYMENT_DATA_REQUEST_CODE = 991
  * ```
  * @property activity the activity used by the plugin binding.
  */
-class GooglePayHandler(private val activity: Activity) :
-        PluginRegistry.ActivityResultListener {
+class GooglePayHandler(
+    private val activity: Activity,
+) : PluginRegistry.ActivityResultListener {
 
-    private lateinit var loadPaymentDataResult: Result
+    private var eventSink: EventChannel.EventSink? = null
 
     companion object {
 
@@ -58,25 +59,21 @@ class GooglePayHandler(private val activity: Activity) :
          */
         @JvmStatic
         fun buildPaymentProfile(
-                paymentProfileString: String,
-                paymentItems: List<Map<String, Any?>>? = null
+            paymentProfileString: String,
+            paymentItems: List<Map<String, Any?>>? = null
         ): JSONObject {
             val paymentProfile = JSONObject(paymentProfileString)
-
-            // Add payment information
             paymentItems?.find { it["type"] == "total" }.let {
                 val priceStatus = when (it?.get("status")) {
                     "final_price" -> "FINAL"
                     "pending" -> "ESTIMATED"
                     else -> "NOT_CURRENTLY_KNOWN"
                 }
-
                 paymentProfile.getJSONObject("transactionInfo").apply {
                     putOpt("totalPrice", it?.get("amount"))
                     put("totalPriceStatus", priceStatus)
                 }
             }
-
             return paymentProfile
         }
     }
@@ -95,13 +92,15 @@ class GooglePayHandler(private val activity: Activity) :
      */
     private fun paymentClientForProfile(paymentProfile: JSONObject): PaymentsClient {
         val environmentConstant = PaymentsUtil
-                .environmentForString(paymentProfile["environment"] as String?)
-
+            .environmentForString(paymentProfile["environment"] as String?)
         return Wallet.getPaymentsClient(
-                activity,
-                Wallet.WalletOptions.Builder()
-                        .setEnvironment(environmentConstant)
-                        .build())
+            activity,
+            Wallet.WalletOptions.Builder().setEnvironment(environmentConstant).build()
+        )
+    }
+
+    fun setEventSink(events: EventChannel.EventSink?) {
+        eventSink = events
     }
 
     /**
@@ -116,8 +115,10 @@ class GooglePayHandler(private val activity: Activity) :
      * @param result callback to communicate back with the Dart end in Flutter.
      * @param paymentProfileString the payment configuration object in [String] format.
      */
-    fun isReadyToPay(result: Result, paymentProfileString: String) {
-
+    fun isReadyToPay(
+        result: io.flutter.plugin.common.MethodChannel.Result,
+        paymentProfileString: String
+    ) {
         // Construct profile and client
         val paymentProfile = buildPaymentProfile(paymentProfileString)
         val client = paymentClientForProfile(paymentProfile)
@@ -129,9 +130,10 @@ class GooglePayHandler(private val activity: Activity) :
                 result.success(completedTask.getResult(ApiException::class.java))
             } catch (exception: Exception) {
                 result.error(
-                        PaymentsUtil.statusCodeForException(exception).toString(),
-                        exception.message,
-                        null)
+                    PaymentsUtil.statusCodeForException(exception).toString(),
+                    exception.message,
+                    null
+                )
             }
         }
     }
@@ -144,63 +146,56 @@ class GooglePayHandler(private val activity: Activity) :
      * the [`loadPaymentData`][https://developers.google.com/android/reference/com/google/android/gms/wallet/PaymentsClient#isReadyToPay(com.google.android.gms.wallet.IsReadyToPayRequest)]
      * call to learn more.
      *
-     * @param result te reference to the result to send the response back to Flutter.
      * @param paymentProfileString a JSON string with the configuration to execute this payment.
      * @param paymentItems a list of payment elements that determine the total amount purchased.
      */
     fun loadPaymentData(
-            result: Result,
-            paymentProfileString: String,
-            paymentItems: List<Map<String, Any?>>
+        paymentProfileString: String,
+        paymentItems: List<Map<String, Any?>>
     ) {
-
-        // Update the member to call the result when the operation completes
-        loadPaymentDataResult = result
-
         val paymentProfile = buildPaymentProfile(paymentProfileString, paymentItems)
         val client = paymentClientForProfile(paymentProfile)
         val ldpRequest = PaymentDataRequest.fromJson(paymentProfile.toString())
         AutoResolveHelper.resolveTask(
-                client.loadPaymentData(ldpRequest),
-                activity,
-                LOAD_PAYMENT_DATA_REQUEST_CODE)
+            client.loadPaymentData(ldpRequest),
+            activity,
+            LOAD_PAYMENT_DATA_REQUEST_CODE
+        )
     }
 
-    override fun onActivityResult(
-            requestCode: Int,
-            resultCode: Int,
-            data: Intent?,
-    ): Boolean = when (requestCode) {
-        LOAD_PAYMENT_DATA_REQUEST_CODE -> {
-            when (resultCode) {
-
-                // The request ran successfully. Process the result.
-                Activity.RESULT_OK -> {
-                    data?.let { intent ->
-                        PaymentData.getFromIntent(intent).let(::handlePaymentSuccess)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        return when (requestCode) {
+            LOAD_PAYMENT_DATA_REQUEST_CODE -> {
+                when (resultCode) {
+                    Activity.RESULT_OK -> {
+                        data?.let { intent ->
+                            PaymentData.getFromIntent(intent)?.let(::handlePaymentSuccess)
+                        }
+                        true
                     }
-                    true
-                }
 
-                Activity.RESULT_CANCELED -> {
-                    loadPaymentDataResult.error(
+                    Activity.RESULT_CANCELED -> {
+                        eventSink?.error(
                             "paymentCanceled",
                             "User canceled payment authorization",
-                            null)
-                    true
-                }
-
-                AutoResolveHelper.RESULT_ERROR -> {
-                    AutoResolveHelper.getStatusFromIntent(data)?.let { status ->
-                        handleError(status.statusCode)
+                            null
+                        )
+                        true
                     }
-                    true
-                }
 
-                else -> false
+                    AutoResolveHelper.RESULT_ERROR -> {
+                        AutoResolveHelper.getStatusFromIntent(data)?.let { status ->
+                            handleError(status.statusCode)
+                        }
+                        true
+                    }
+
+                    else -> false
+                }
             }
+
+            else -> false
         }
-        else -> false
     }
 
     /**
@@ -211,14 +206,11 @@ class GooglePayHandler(private val activity: Activity) :
      * @see [Payment
      * Data](https://developers.google.com/pay/api/android/reference/object.PaymentData)
      */
-    private fun handlePaymentSuccess(paymentData: PaymentData?) {
+    private fun handlePaymentSuccess(paymentData: PaymentData) {
         if (paymentData != null) {
-            loadPaymentDataResult.success(paymentData.toJson())
+            eventSink?.success(paymentData.toJson())
         } else {
-            loadPaymentDataResult.error(
-                    CommonStatusCodes.INTERNAL_ERROR.toString(),
-                    "Unexpected empty result data.",
-                    null)
+            handleError(CommonStatusCodes.INTERNAL_ERROR)
         }
     }
 
@@ -234,6 +226,7 @@ class GooglePayHandler(private val activity: Activity) :
      * @see [
      * Wallet constants library](https://developers.google.com/android/reference/com/google/android/gms/wallet/WalletConstants.constant-summary)
      */
-    private fun handleError(statusCode: Int) =
-            loadPaymentDataResult.error(statusCode.toString(), "", null)
+    private fun handleError(statusCode: Int) {
+        eventSink?.error(statusCode.toString(), "", null)
+    }
 }
